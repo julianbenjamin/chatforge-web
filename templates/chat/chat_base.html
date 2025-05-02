@@ -113,12 +113,33 @@
         <a href="{% url 'accounts:settings' %}" title="Ayarlar">
           <i class="bi bi-gear-fill"></i>
         </a>
+         <a href="{% url 'accounts:favorites' %}" title="Favori Modeller">
+             <i class="bi bi-heart-fill"></i>
+           </a>
       </div>
     </aside>
 
     <!-- Main chat area -->
     <main class="chat-main">
-      {% block chat_content %}{% endblock %}
+      {% block chat_content %}
+      <form method="post" action="{% url 'chat:session_change_model' session.pk %}"
+      class="mb-3 d-flex align-items-center">
+  {% csrf_token %}
+  <label for="model-select" class="me-2">Chat Modeli:</label>
+  <select id="model-select" name="model" class="form-select me-2" style="max-width:200px;">
+    {% for m in favorite_models %}
+      <option value="{{ m.model_id }}"
+        {% if m.model_id == session.model_id %}selected{% endif %}>
+        {{ m.name }}
+      </option>
+    {% empty %}
+      <option disabled>Favori model yok. Ayarlardan ekleyin.</option>
+    {% endfor %}
+  </select>
+  <button type="submit" class="btn btn-sm btn-outline-primary">
+    <i class="bi bi-check-lg"></i> Güncelle
+  </button>
+</form>{% endblock %}
     </main>
   </div>
 {% endblock %}

@@ -93,3 +93,20 @@ def refresh_models(request):
 
     return redirect('accounts:settings')
 
+@login_required
+def favorites_view(request):
+    user       = request.user
+    all_models = AIModel.objects.order_by('name')
+    favorite_qs = user.favorite_models.values_list('model_id', flat=True)
+
+    if request.method == 'POST':
+        selected = request.POST.getlist('favorites')
+        qs = AIModel.objects.filter(model_id__in=selected)
+        user.favorite_models.set(qs)
+        messages.success(request, "Favori modelleriniz güncellendi.")
+        return redirect('accounts:favorites')
+
+    return render(request, 'accounts/favorites.html', {
+        'all_models':  all_models,
+        'favorite_qs': favorite_qs,
+    })

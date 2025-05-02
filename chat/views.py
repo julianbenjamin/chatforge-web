@@ -38,9 +38,11 @@ def session_list(request):
     })
 @login_required
 def session_detail(request, pk):
-    session = get_object_or_404(ChatSession, pk=pk, user=request.user)
+    session   = get_object_or_404(ChatSession, pk=pk, user=request.user)
+    favorites = request.user.favorite_models.all()
     return render(request, 'chat/session_detail.html', {
-        'session': session,
+        'session':        session,
+        'favorite_models': favorites,
     })
 @login_required
 def new_session(request):
