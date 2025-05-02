@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Hesap Ayarları{% endblock %}
+{% block content %}
+<div class="py-5">
+  <h2>Hesap Ayarları</h2>
+  <form method="post">{% csrf_token %}
+    <div class="mb-3">{{ form.openrouter_api_key.label_tag }}{{ form.openrouter_api_key }}</div>
+    <div class="mb-3">{{ form.default_model.label_tag }}{{ form.default_model }}
+      {% if form.default_model.help_text %}<div class="form-text">{{ form.default_model.help_text }}</div>{% endif %}
+    </div>
+    <button class="btn btn-primary">Kaydet</button>
+  </form>
+</div>
+{% endblock %}
