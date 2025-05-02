@@ -1,3 +1,4 @@
+{# templates/chat/session_detail.html #}
 {% extends "chat/chat_base.html" %}
 
 {% block title %}{{ session.title|default:"Yeni Sohbet" }} — ChatForge{% endblock %}
@@ -5,80 +6,146 @@
 {% block extra_head %}
   {{ block.super }}
   <style>
-    /* Mesaj konteyneri */
+    /* Mesajlar kapsayıcısı */
     #msg-container {
       flex: 1;
+      padding: 1rem;
       overflow-y: auto;
-      padding-right: .5rem;
+      background: #f7f8fa;
+    }
+
+    /* Her bir mesaj satırı */
+    .msg {
+      display: flex;
+      flex-direction: column;
       margin-bottom: 1rem;
-    }
-    /* Balon stili */
-    .chat-bubble {
-      display: inline-block;
-      max-width: 70%;
-      padding: .75rem 1rem;
-      border-radius: 1rem;
       position: relative;
-      white-space: pre-wrap;
+    }
+    .msg.user { align-items: flex-end; }
+    .msg.ai   { align-items: flex-start; }
+
+    /* Oval sohbet balonu */
+    .chat-bubble {
+      position: relative;
+      max-width: 65%;
+      padding: 1rem;
+      border-radius: 1rem;
       word-break: break-word;
+      line-height: 1.5;
     }
-    /* Kullanıcı (sağ) */
-    .chat-user .chat-bubble {
-      background: #007bff;
+    .msg.user .chat-bubble {
+      background: #0b93f6;
       color: #fff;
-      border-top-right-radius: 0;
-      align-self: flex-end;
+      border-top-right-radius: 0.25rem;
     }
-    .chat-user .timestamp {
-      color: #cfe2ff;
-    }
-    /* AI (sol) */
-    .chat-ai .chat-bubble {
-      background: #e9ecef;
+    .msg.ai .chat-bubble {
+      background: #e5e5ea;
       color: #000;
-      border-top-left-radius: 0;
-      align-self: flex-start;
+      border-top-left-radius: 0.25rem;
     }
-    .chat-ai .timestamp {
-      color: #6c757d;
+
+    /* Pointer oklar */
+    .msg.user .chat-bubble::after {
+      content: "";
+      position: absolute;
+      right: -10px; top: 12px;
+      border-width: 8px 0 8px 10px;
+      border-style: solid;
+      border-color: transparent transparent transparent #0b93f6;
     }
+    .msg.ai .chat-bubble::after {
+      content: "";
+      position: absolute;
+      left: -10px; top: 12px;
+      border-width: 8px 10px 8px 0;
+      border-style: solid;
+      border-color: transparent #e5e5ea transparent transparent;
+    }
+
     /* Zaman damgası */
     .timestamp {
       font-size: .75rem;
+      color: #6c757d;
       margin-top: .25rem;
     }
+
     /* Kopyala ikonu */
     .chat-bubble .copy-btn {
       position: absolute;
-      top: .25rem;
+      top: .5rem;
       right: .5rem;
       background: transparent;
       border: none;
       color: inherit;
-      opacity: .5;
+      opacity: .4;
       cursor: pointer;
     }
     .chat-bubble .copy-btn:hover {
       opacity: 1;
     }
+
+    /* Girdi alanı */
+    .input-area {
+      display: flex;
+      border-top: 1px solid #dee2e6;
+      padding: .75rem;
+      background: #fff;
+    }
+    .input-area textarea {
+      flex: 1;
+      resize: none;
+      border-radius: .5rem;
+      border: 1px solid #ccc;
+      padding: .75rem;
+      font-size: .95rem;
+      margin-right: .5rem;
+    }
+    .input-area button {
+      width: 120px;
+    }
   </style>
 {% endblock %}
 
 {% block chat_content %}
-  <h4 class="mb-3">{{ session.title|default:"Yeni Sohbet" }}</h4>
+  {# Başlık + Düzenle / Sil #}
+  <div class="d-flex align-items-center mb-3">
+    <h4 class="me-3 mb-0">{{ session.title|default:"Yeni Sohbet" }}</h4>
+
+    <form method="post"
+          action="{% url 'chat:session_rename' session.pk %}"
+          class="d-flex me-auto">
+      {% csrf_token %}
+      <input type="text"
+             name="title"
+             value="{{ session.title|default:'Yeni Sohbet' }}"
+             class="form-control form-control-sm me-2"
+             style="max-width:200px;">
+      <button type="submit" class="btn btn-sm btn-outline-success">
+        <i class="bi bi-check-lg"></i>
+      </button>
+    </form>
+
+    <form method="post"
+          action="{% url 'chat:session_delete' session.pk %}"
+          onsubmit="return confirm('Bu sohbeti silmek istediğinize emin misiniz?');">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-sm btn-outline-danger">
+        <i class="bi bi-trash-fill"></i>
+      </button>
+    </form>
+  </div>
+
+  {# Mesaj Listesi #}
   <div id="msg-container">
     {% for msg in session.messages.all %}
-      <div class="d-flex flex-column {% if msg.is_user %}chat-user{% else %}chat-ai{% endif %}">
+      <div class="msg {% if msg.is_user %}user{% else %}ai{% endif %}">
         <div class="chat-bubble">
           {{ msg.content|linebreaksbr }}
-          <button class="copy-btn" data-content="{{ msg.content|escapejs }}"
-                  title="Kopyala">
+          <button class="copy-btn" data-content="{{ msg.content|escapejs }}">
             <i class="bi bi-clipboard"></i>
           </button>
         </div>
-        <div class="timestamp">
-          {{ msg.timestamp|date:"H:i" }}
-        </div>
+        <div class="timestamp">{{ msg.timestamp|date:"H:i" }}</div>
       </div>
     {% empty %}
       <div class="text-center text-muted mt-5">
@@ -87,26 +154,28 @@
     {% endfor %}
   </div>
 
-  <div class="input-group">
-    <textarea id="msg-input" rows="2" class="form-control"
+  {# Mesaj Gönderme Alanı #}
+  <div class="input-area">
+    <textarea id="msg-input" rows="2"
       placeholder="Mesajınızı yazın… (Shift+Enter alt satır)"></textarea>
     <button id="send-btn" class="btn btn-primary">
-      <i class="bi bi-send-fill"></i> Gönder
+      <i class="bi bi-send-fill me-1"></i> Gönder
     </button>
   </div>
 
+  {# JS: Scroll, Gönderme, Kopyalama #}
   <script>
     const sessionId = {{ session.id }};
     const input     = document.getElementById('msg-input');
     const btn       = document.getElementById('send-btn');
-    const container = document.getElementById('msg-container');
+    const box       = document.getElementById('msg-container');
 
-    function scrollToBottom(){
-      container.scrollTop = container.scrollHeight;
+    function scrollBottom(){
+      box.scrollTop = box.scrollHeight;
     }
-    scrollToBottom();
+    scrollBottom();
 
-    function formatContent(text){
+    function format(text){
       const tmp = document.createElement('div');
       tmp.textContent = text;
       return tmp.innerHTML.replace(/\n/g,'<br>');
@@ -117,18 +186,20 @@
       if(!raw) return;
       btn.disabled = true;
 
-      // Kullanıcı balonu
-      container.insertAdjacentHTML('beforeend', `
-        <div class="d-flex flex-column chat-user">
-          <div class="chat-bubble">${formatContent(raw)}<button class="copy-btn" data-content="${raw}"><i class="bi bi-clipboard"></i></button></div>
-          <div class="timestamp">${new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div>
+      box.insertAdjacentHTML('beforeend', `
+        <div class="msg user">
+          <div class="chat-bubble">${format(raw)}
+            <button class="copy-btn" data-content="${raw}">
+              <i class="bi bi-clipboard"></i>
+            </button>
+          </div>
+          <div class="timestamp">${new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</div>
         </div>`);
-      scrollToBottom();
+      scrollBottom();
 
-      // API isteği
       const res = await fetch(`/chat/${sessionId}/send/`, {
-        method:'POST',
-        headers:{
+        method: 'POST',
+        headers: {
           'Content-Type':'application/json',
           'X-CSRFToken':'{{ csrf_token }}'
         },
@@ -137,17 +208,21 @@
       const data = await res.json();
 
       if(data.ai){
-        const aiRaw = data.ai.content;
-        container.insertAdjacentHTML('beforeend', `
-          <div class="d-flex flex-column chat-ai">
-            <div class="chat-bubble">${formatContent(aiRaw)}<button class="copy-btn" data-content="${aiRaw}"><i class="bi bi-clipboard"></i></button></div>
-            <div class="timestamp">${new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div>
+        const ai = data.ai.content;
+        box.insertAdjacentHTML('beforeend', `
+          <div class="msg ai">
+            <div class="chat-bubble">${format(ai)}
+              <button class="copy-btn" data-content="${ai}">
+                <i class="bi bi-clipboard"></i>
+              </button>
+            </div>
+            <div class="timestamp">${new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</div>
           </div>`);
-        scrollToBottom();
+        scrollBottom();
       }
 
-      input.value='';
-      btn.disabled=false;
+      input.value = '';
+      btn.disabled = false;
       input.focus();
     }
 
@@ -159,14 +234,13 @@
       }
     });
 
-    // Kopyala dinleyicisi
     document.addEventListener('click', e=>{
       const b = e.target.closest('.copy-btn');
       if(!b) return;
       navigator.clipboard.writeText(b.dataset.content)
         .then(()=>{
           b.innerHTML = '<i class="bi bi-clipboard-check"></i>';
-          setTimeout(()=> b.innerHTML = '<i class="bi bi-clipboard"></i>', 1000);
+          setTimeout(()=> b.innerHTML = '<i class="bi bi-clipboard"></i>',1000);
         });
     });
   </script>

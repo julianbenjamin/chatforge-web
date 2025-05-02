@@ -1,80 +1,124 @@
+{# templates/chat/chat_base.html #}
 {% extends "base.html" %}
 
 {% block extra_head %}
   {{ block.super }}
   <style>
     .chat-layout {
-      display: flex;
-      height: calc(100vh - 100px);
-      margin: 2rem 0;
-      background: #fff;
-      border-radius: .5rem;
-      box-shadow: 0 4px 12px rgba(0,0,0,.05);
-      overflow: hidden;
+      display: grid;
+      grid-template-columns: 300px 1fr;
+      height: calc(100vh - 2rem);
+      gap: 1rem;
+      margin: 1rem 0;
     }
     .chat-sidebar {
-      width: 280px;
-      border-right: 1px solid #dee2e6;
-      background: #f8f9fa;
+      background: #fff;
+      border-radius: .5rem;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
       display: flex;
       flex-direction: column;
+      overflow: hidden;
     }
     .chat-sidebar .new-chat-btn {
       margin: 1rem;
     }
-    .chat-sidebar .nav {
+    .chat-list {
       flex: 1;
       overflow-y: auto;
-      padding: 0 0.5rem;
+      padding: 0 .5rem 1rem;
     }
-    .chat-sidebar .nav-link {
-      color: #495057;
+    .chat-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
       padding: .75rem 1rem;
-      border-radius: .375rem;
-      margin-bottom: .25rem;
+      border-radius: .5rem;
+      text-decoration: none;
+      color: #333;
+      margin-bottom: .5rem;
+      transition: background .2s;
     }
-    .chat-sidebar .nav-link.active {
+    .chat-item:hover { background: #f5f5f5; }
+    .chat-item.active {
       background: #e9ecef;
-      font-weight: 600;
+      font-weight: 500;
     }
+
+    /* ===== Footer Icons ===== */
+    .sidebar-footer {
+      display: flex;
+      justify-content: space-around;
+      padding: .75rem 0;
+      border-top: 1px solid #dee2e6;
+    }
+    .sidebar-footer a {
+      color: #6c757d;
+      transition: color .2s;
+    }
+    .sidebar-footer a:hover {
+      color: #343a40;
+    }
+    .sidebar-footer i {
+      font-size: 1.25rem;
+    }
+
     .chat-main {
-      flex: 1;
+      background: #fff;
+      border-radius: .5rem;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
       display: flex;
       flex-direction: column;
-      padding: 1rem 1.5rem;
+      overflow: hidden;
     }
   </style>
 {% endblock %}
 
 {% block content %}
-  <div class="container-fluid">
-    <div class="chat-layout">
-      <!-- Sidebar -->
-      <aside class="chat-sidebar">
-        <a href="{% url 'chat:session_new' %}"
-           class="btn btn-outline-primary new-chat-btn">
-          <i class="bi bi-plus-lg"></i> Yeni Sohbet
-        </a>
-        <nav class="nav flex-column">
-          {% for sess in request.user.chatsession_set.all|dictsortreversed:"created_at" %}
-            <a href="{% url 'chat:session_detail' sess.pk %}"
-               class="nav-link {% if session and sess.pk == session.pk %}active{% endif %}">
-              {{ sess.title|default:"(Adsız)" }}
-              <br>
-              <small class="text-muted">{{ sess.created_at|date:"d.m.Y H:i" }}</small>
-            </a>
-          {% empty %}
-            <div class="text-center text-muted mt-3">
-              Henüz sohbet yok.
-            </div>
-          {% endfor %}
-        </nav>
-      </aside>
+  <div class="chat-layout">
+    <!-- Sidebar -->
+    <aside class="chat-sidebar">
+      <a href="{% url 'chat:session_new' %}"
+         class="btn btn-outline-primary new-chat-btn">
+        <i class="bi bi-plus-lg"></i> Yeni Sohbet
+      </a>
 
-      <!-- Main chat area -->
-      <main class="chat-main">
-        {% block chat_content %}{% endblock %}
-      </main>
-    </div>
+      <div class="chat-list">
+        {% for sess in request.user.chatsession_set.all|dictsortreversed:"created_at" %}
+          <a href="{% url 'chat:session_detail' sess.pk %}"
+             class="chat-item {% if session and sess.pk == session.pk %}active{% endif %}">
+            <div class="info">
+              <div class="title">{{ sess.title|default:"(Adsız)" }}</div>
+              {% with last=sess.messages.last %}
+                {% if last %}
+                  <div class="snippet">{{ last.content|truncatechars:30 }}</div>
+                {% endif %}
+              {% endwith %}
+            </div>
+            <div class="text-muted small">
+              {{ sess.created_at|date:"H:i" }}
+            </div>
+          </a>
+        {% empty %}
+          <div class="text-center text-muted mt-4">Henüz sohbet yok.</div>
+        {% endfor %}
+      </div>
+
+      <!-- ===== Sidebar Footer ===== -->
+      <div class="sidebar-footer">
+        <!-- Model listesini yenilemek için -->
+        <a href="{% url 'accounts:refresh_models' %}" title="Modelleri Güncelle">
+          <i class="bi bi-arrow-repeat"></i>
+        </a>
+        <!-- Ayarlar sayfasına gitmek için -->
+        <a href="{% url 'accounts:settings' %}" title="Ayarlar">
+          <i class="bi bi-gear-fill"></i>
+        </a>
+      </div>
+    </aside>
+
+    <!-- Main chat area -->
+    <main class="chat-main">
+      {% block chat_content %}{% endblock %}
+    </main>
   </div>
 {% endblock %}
