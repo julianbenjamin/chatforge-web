@@ -6,8 +6,28 @@ from django.views.decorators.http import require_POST
 from .models import ChatSession, Message
 from chat.services import OpenRouterClient
 from django.conf import settings
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
+@login_required
+def session_list(request):
+    # boş bir “session” tanımlayıp direkt yeni oturum oluşturma linki gösterebilir
+    return render(request, 'chat/chat_base.html', {
+        'session': None,  # sidebar için
+    })
+@login_required
+def session_detail(request, pk):
+    session = get_object_or_404(ChatSession, pk=pk, user=request.user)
+    return render(request, 'chat/session_detail.html', {
+        'session': session,
+    })
+@login_required
+def new_session(request):
+    # Yeni bir oturum oluştur, başlık olarak tarih/kullanıcı seçebilirsin
+    session = ChatSession.objects.create(
+        user=request.user,
+        title="Yeni Sohbet"
+    )
+    return redirect('chat:session_detail', pk=session.pk)
 @login_required
 @require_POST
 def send_message(request, session_id):

@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block extra_head %}
+  {{ block.super }}
+  <style>
+    .chat-layout {
+      display: flex;
+      height: calc(100vh - 100px);
+      margin: 2rem 0;
+      background: #fff;
+      border-radius: .5rem;
+      box-shadow: 0 4px 12px rgba(0,0,0,.05);
+      overflow: hidden;
+    }
+    .chat-sidebar {
+      width: 280px;
+      border-right: 1px solid #dee2e6;
+      background: #f8f9fa;
+      display: flex;
+      flex-direction: column;
+    }
+    .chat-sidebar .new-chat-btn {
+      margin: 1rem;
+    }
+    .chat-sidebar .nav {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0 0.5rem;
+    }
+    .chat-sidebar .nav-link {
+      color: #495057;
+      padding: .75rem 1rem;
+      border-radius: .375rem;
+      margin-bottom: .25rem;
+    }
+    .chat-sidebar .nav-link.active {
+      background: #e9ecef;
+      font-weight: 600;
+    }
+    .chat-main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 1rem 1.5rem;
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+  <div class="container-fluid">
+    <div class="chat-layout">
+      <!-- Sidebar -->
+      <aside class="chat-sidebar">
+        <a href="{% url 'chat:session_new' %}"
+           class="btn btn-outline-primary new-chat-btn">
+          <i class="bi bi-plus-lg"></i> Yeni Sohbet
+        </a>
+        <nav class="nav flex-column">
+          {% for sess in request.user.chatsession_set.all|dictsortreversed:"created_at" %}
+            <a href="{% url 'chat:session_detail' sess.pk %}"
+               class="nav-link {% if session and sess.pk == session.pk %}active{% endif %}">
+              {{ sess.title|default:"(Adsız)" }}
+              <br>
+              <small class="text-muted">{{ sess.created_at|date:"d.m.Y H:i" }}</small>
+            </a>
+          {% empty %}
+            <div class="text-center text-muted mt-3">
+              Henüz sohbet yok.
+            </div>
+          {% endfor %}
+        </nav>
+      </aside>
+
+      <!-- Main chat area -->
+      <main class="chat-main">
+        {% block chat_content %}{% endblock %}
+      </main>
+    </div>
+  </div>
+{% endblock %}

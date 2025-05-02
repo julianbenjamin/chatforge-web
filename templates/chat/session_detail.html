@@ -1,39 +1,98 @@
-{% extends "base.html" %}
+{% extends "chat/chat_base.html" %}
 
-{% block title %}
-  {{ session.title }}
+{% block title %}{{ session.title|default:"Yeni Sohbet" }} — ChatForge{% endblock %}
+
+{% block extra_head %}
+  {{ block.super }}
+  <style>
+    /* Mesaj konteyneri */
+    #msg-container {
+      flex: 1;
+      overflow-y: auto;
+      padding-right: .5rem;
+      margin-bottom: 1rem;
+    }
+    /* Balon stili */
+    .chat-bubble {
+      display: inline-block;
+      max-width: 70%;
+      padding: .75rem 1rem;
+      border-radius: 1rem;
+      position: relative;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    /* Kullanıcı (sağ) */
+    .chat-user .chat-bubble {
+      background: #007bff;
+      color: #fff;
+      border-top-right-radius: 0;
+      align-self: flex-end;
+    }
+    .chat-user .timestamp {
+      color: #cfe2ff;
+    }
+    /* AI (sol) */
+    .chat-ai .chat-bubble {
+      background: #e9ecef;
+      color: #000;
+      border-top-left-radius: 0;
+      align-self: flex-start;
+    }
+    .chat-ai .timestamp {
+      color: #6c757d;
+    }
+    /* Zaman damgası */
+    .timestamp {
+      font-size: .75rem;
+      margin-top: .25rem;
+    }
+    /* Kopyala ikonu */
+    .chat-bubble .copy-btn {
+      position: absolute;
+      top: .25rem;
+      right: .5rem;
+      background: transparent;
+      border: none;
+      color: inherit;
+      opacity: .5;
+      cursor: pointer;
+    }
+    .chat-bubble .copy-btn:hover {
+      opacity: 1;
+    }
+  </style>
 {% endblock %}
 
-{% block content %}
-  <div class="py-5">
-    <h2>{{ session.title }}</h2>
-    <div id="msg-container" class="border p-3 mb-3" style="height:60vh; overflow-y:auto;">
-      {% for msg in session.messages.all %}
-        <div class="my-2 text-{{ msg.is_user|yesno:'end,start' }}">
-              <div
-                class="badge bg-{{ msg.is_user|yesno:'primary,secondary' }} text-start"
-               style="white-space: pre-wrap;"
-             >
-                {{ msg.content|linebreaksbr }}
-            </div>
-              <!-- Kopyala ikonu -->
-        <button 
-        class="btn btn-sm btn-outline-light copy-btn" 
-        data-content="{{ msg.content|escapejs }}" 
-        title="Mesajı kopyala"
-        style="font-size: 0.85rem;">
-        <i class="bi bi-clipboard"></i>
-      </button>
+{% block chat_content %}
+  <h4 class="mb-3">{{ session.title|default:"Yeni Sohbet" }}</h4>
+  <div id="msg-container">
+    {% for msg in session.messages.all %}
+      <div class="d-flex flex-column {% if msg.is_user %}chat-user{% else %}chat-ai{% endif %}">
+        <div class="chat-bubble">
+          {{ msg.content|linebreaksbr }}
+          <button class="copy-btn" data-content="{{ msg.content|escapejs }}"
+                  title="Kopyala">
+            <i class="bi bi-clipboard"></i>
+          </button>
         </div>
-      {% empty %}
-        <div class="text-muted">Henüz mesaj yok.</div>
-      {% endfor %}
-    </div>
+        <div class="timestamp">
+          {{ msg.timestamp|date:"H:i" }}
+        </div>
+      </div>
+    {% empty %}
+      <div class="text-center text-muted mt-5">
+        Bu sohbette henüz mesaj yok.
+      </div>
+    {% endfor %}
+  </div>
 
-    <div class="input-group">
-      <input id="msg-input" type="text" class="form-control" placeholder="Mesajınızı yazın…">
-      <button id="send-btn" class="btn btn-primary">Gönder</button>
-    </div>
+  <div class="input-group">
+    <textarea id="msg-input" rows="2" class="form-control"
+      placeholder="Mesajınızı yazın… (Shift+Enter alt satır)"></textarea>
+    <button id="send-btn" class="btn btn-primary">
+      <i class="bi bi-send-fill"></i> Gönder
+    </button>
   </div>
 
   <script>
@@ -41,78 +100,74 @@
     const input     = document.getElementById('msg-input');
     const btn       = document.getElementById('send-btn');
     const container = document.getElementById('msg-container');
-  
-    function formatContent(text) {
-      const div = document.createElement('div');
-      div.textContent = text;
-      let escaped = div.innerHTML;
-      return escaped.replace(/\n/g, '<br>');
-    }
-  
-    async function sendMessage() {
-      const raw = input.value.trim();
-      if (!raw) return;
-  
-      btn.disabled = true;
-  
-      // Kullanıcı mesajını ekle
-      container.insertAdjacentHTML('beforeend', `
-        <div class="my-2 text-end">
-          <div class="badge bg-primary text-start" style="white-space: pre-wrap;">
-            ${formatContent(raw)}
-          </div>
-        </div>`);
+
+    function scrollToBottom(){
       container.scrollTop = container.scrollHeight;
-  
-      // API çağrısı
-      const resp = await fetch(`/chat/${sessionId}/send/`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRFToken': '{{ csrf_token }}'
+    }
+    scrollToBottom();
+
+    function formatContent(text){
+      const tmp = document.createElement('div');
+      tmp.textContent = text;
+      return tmp.innerHTML.replace(/\n/g,'<br>');
+    }
+
+    async function sendMessage(){
+      const raw = input.value.trim();
+      if(!raw) return;
+      btn.disabled = true;
+
+      // Kullanıcı balonu
+      container.insertAdjacentHTML('beforeend', `
+        <div class="d-flex flex-column chat-user">
+          <div class="chat-bubble">${formatContent(raw)}<button class="copy-btn" data-content="${raw}"><i class="bi bi-clipboard"></i></button></div>
+          <div class="timestamp">${new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div>
+        </div>`);
+      scrollToBottom();
+
+      // API isteği
+      const res = await fetch(`/chat/${sessionId}/send/`, {
+        method:'POST',
+        headers:{
+          'Content-Type':'application/json',
+          'X-CSRFToken':'{{ csrf_token }}'
         },
         body: JSON.stringify({message: raw})
       });
-      const data = await resp.json();
-  
-      // AI cevabını ekle
-      if (data.ai) {
+      const data = await res.json();
+
+      if(data.ai){
+        const aiRaw = data.ai.content;
         container.insertAdjacentHTML('beforeend', `
-          <div class="my-2 text-start">
-            <div class="badge bg-secondary text-start" style="white-space: pre-wrap;">
-              ${formatContent(data.ai.content)}
-            </div>
+          <div class="d-flex flex-column chat-ai">
+            <div class="chat-bubble">${formatContent(aiRaw)}<button class="copy-btn" data-content="${aiRaw}"><i class="bi bi-clipboard"></i></button></div>
+            <div class="timestamp">${new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div>
           </div>`);
-        container.scrollTop = container.scrollHeight;
+        scrollToBottom();
       }
-  
-      input.value = '';
-      btn.disabled = false;
+
+      input.value='';
+      btn.disabled=false;
+      input.focus();
     }
-  
-    // Buton tıklamasını dinle
+
     btn.addEventListener('click', sendMessage);
-  
-    // Enter tuşuna basılınca da gönder
-    input.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();  // satır sonu eklemek istemiyorsak
+    input.addEventListener('keydown', e=>{
+      if(e.key==='Enter' && !e.shiftKey){
+        e.preventDefault();
         sendMessage();
       }
     });
-    document.querySelectorAll('.copy-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const text = btn.getAttribute('data-content');
-      navigator.clipboard.writeText(text)
-        .then(() => {
-          // İsteğe bağlı: kısa bir bildirim
-          btn.innerHTML = '<i class="bi bi-clipboard-check"></i>';
-          setTimeout(() => btn.innerHTML = '<i class="bi bi-clipboard"></i>', 1000);
-        })
-        .catch(err => {
-          console.error('Kopyalama hatası:', err);
+
+    // Kopyala dinleyicisi
+    document.addEventListener('click', e=>{
+      const b = e.target.closest('.copy-btn');
+      if(!b) return;
+      navigator.clipboard.writeText(b.dataset.content)
+        .then(()=>{
+          b.innerHTML = '<i class="bi bi-clipboard-check"></i>';
+          setTimeout(()=> b.innerHTML = '<i class="bi bi-clipboard"></i>', 1000);
         });
     });
-  });    
   </script>
 {% endblock %}
