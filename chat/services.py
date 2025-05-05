@@ -13,10 +13,6 @@ class OpenRouterClient:
         self.api_key = api_key
 
     def list_models(self):
-        """
-        OpenRouter’dan mevcut model listesini çeker.
-        Dönen JSON’da önce 'data', sonra 'models' anahtarına bakar.
-        """
         url = f"{self.BASE_URL}/v1/models"
         headers = {"Authorization": f"Bearer {self.api_key}"}
         # verify=True bırakarak SSL sorununu da görebilirsiniz:
@@ -31,10 +27,6 @@ class OpenRouterClient:
         return [(m["id"], m.get("name", m["id"])) for m in models]
 
     def send_message(self, model_id, user_message, history=None):
-        """
-        Tek bir soru-cevap çalıştırır.
-        history: [(role, content), ...] listesini OpenRouter formatına çevirir.
-        """
         url = f"{self.BASE_URL}/v1/chat/completions"
         headers = {"Authorization": f"Bearer {self.api_key}"}
         messages = []

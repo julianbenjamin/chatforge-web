@@ -1,10 +1,9 @@
 {% extends "base.html" %}
-{% block title %}Ana Sayfa{% endblock %}
+{% block title %}Home{% endblock %}
 {% block content %}
   <div class="py-5 text-center">
-    <h1>ChatForge’e Hoş Geldiniz</h1>
-    <p><a href="{% url 'accounts:settings' %}">Ayarlar</a> › OpenRouter API anahtarınızı girerek başlayın.</p>
-    <p>Sohbet oturumları için <a href="{% url 'chat:session_list' %}">buraya tıklayın</a>.</p>
-    
+    <h1>Welcome to ChatForge</h1>
+    <p><a href="{% url 'accounts:settings' %}">Settings</a> › Start by entering your OpenRouter API key.</p>
+    <p>For chat sessions, <a href="{% url 'chat:session_list' %}">click here</a>.</p>
   </div>
 {% endblock %}

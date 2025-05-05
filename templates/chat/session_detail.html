@@ -1,7 +1,7 @@
 {# templates/chat/session_detail.html #}
 {% extends "chat/chat_base.html" %}
 
-{% block title %}{{ session.title|default:"Yeni Sohbet" }} — ChatForge{% endblock %}
+{% block title %}{{ session.title|default:"New Chat" }} — ChatForge{% endblock %}
 
 {% block extra_head %}
   {{ block.super }}
@@ -62,14 +62,11 @@
       border-color: transparent #e5e5ea transparent transparent;
     }
 
-    /* Zaman damgası */
     .timestamp {
       font-size: .75rem;
       color: #6c757d;
       margin-top: .25rem;
     }
-
-    /* Kopyala ikonu */
     .chat-bubble .copy-btn {
       position: absolute;
       top: .5rem;
@@ -84,7 +81,6 @@
       opacity: 1;
     }
 
-    /* Girdi alanı */
     .input-area {
       display: flex;
       border-top: 1px solid #dee2e6;
@@ -109,7 +105,7 @@
 {% block chat_content %}
   {# Başlık + Düzenle / Sil #}
   <div class="d-flex align-items-center mb-3">
-    <h4 class="me-3 mb-0">{{ session.title|default:"Yeni Sohbet" }}</h4>
+    <h4 class="me-3 mb-0">{{ session.title|default:"New Chat" }}</h4>
 
     <form method="post"
           action="{% url 'chat:session_rename' session.pk %}"
@@ -117,7 +113,7 @@
       {% csrf_token %}
       <input type="text"
              name="title"
-             value="{{ session.title|default:'Yeni Sohbet' }}"
+             value="{{ session.title|default:'New Chat' }}"
              class="form-control form-control-sm me-2"
              style="max-width:200px;">
       <button type="submit" class="btn btn-sm btn-outline-success">
@@ -127,7 +123,7 @@
 
     <form method="post"
           action="{% url 'chat:session_delete' session.pk %}"
-          onsubmit="return confirm('Bu sohbeti silmek istediğinize emin misiniz?');">
+          onsubmit="return confirm('Permanently delete this chat?');">
       {% csrf_token %}
       <button type="submit" class="btn btn-sm btn-outline-danger">
         <i class="bi bi-trash-fill"></i>
@@ -149,7 +145,7 @@
       </div>
     {% empty %}
       <div class="text-center text-muted mt-5">
-        Bu sohbette henüz mesaj yok.
+        No messages yet
       </div>
     {% endfor %}
   </div>
@@ -157,9 +153,9 @@
   {# Mesaj Gönderme Alanı #}
   <div class="input-area">
     <textarea id="msg-input" rows="2"
-      placeholder="Mesajınızı yazın… (Shift+Enter alt satır)"></textarea>
+      placeholder="Type message (Shift+Enter to new line)"></textarea>
     <button id="send-btn" class="btn btn-primary">
-      <i class="bi bi-send-fill me-1"></i> Gönder
+      <i class="bi bi-send-fill me-1"></i> Send
     </button>
   </div>
 

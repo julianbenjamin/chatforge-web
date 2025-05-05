@@ -79,7 +79,7 @@
     <aside class="chat-sidebar">
       <a href="{% url 'chat:session_new' %}"
          class="btn btn-outline-primary new-chat-btn">
-        <i class="bi bi-plus-lg"></i> Yeni Sohbet
+        <i class="bi bi-plus-lg"></i> New Chat
       </a>
 
       <div class="chat-list">
@@ -87,7 +87,7 @@
           <a href="{% url 'chat:session_detail' sess.pk %}"
              class="chat-item {% if session and sess.pk == session.pk %}active{% endif %}">
             <div class="info">
-              <div class="title">{{ sess.title|default:"(Adsız)" }}</div>
+              <div class="title">{{ sess.title|default:"(No Name)" }}</div>
               {% with last=sess.messages.last %}
                 {% if last %}
                   <div class="snippet">{{ last.content|truncatechars:30 }}</div>
@@ -99,21 +99,19 @@
             </div>
           </a>
         {% empty %}
-          <div class="text-center text-muted mt-4">Henüz sohbet yok.</div>
+          <div class="text-center text-muted mt-4">No chats yet.</div>
         {% endfor %}
       </div>
 
       <!-- ===== Sidebar Footer ===== -->
       <div class="sidebar-footer">
-        <!-- Model listesini yenilemek için -->
-        <a href="{% url 'accounts:refresh_models' %}" title="Modelleri Güncelle">
+        <a href="{% url 'accounts:refresh_models' %}" title="Update Models">
           <i class="bi bi-arrow-repeat"></i>
         </a>
-        <!-- Ayarlar sayfasına gitmek için -->
-        <a href="{% url 'accounts:settings' %}" title="Ayarlar">
+        <a href="{% url 'accounts:settings' %}" title="Settings">
           <i class="bi bi-gear-fill"></i>
         </a>
-         <a href="{% url 'accounts:favorites' %}" title="Favori Modeller">
+         <a href="{% url 'accounts:favorites' %}" title="Favorite Models">
              <i class="bi bi-heart-fill"></i>
            </a>
       </div>
@@ -125,7 +123,7 @@
       <form method="post" action="{% url 'chat:session_change_model' session.pk %}"
       class="mb-3 d-flex align-items-center">
   {% csrf_token %}
-  <label for="model-select" class="me-2">Chat Modeli:</label>
+  <label for="model-select" class="me-2">Chat Model:</label>
   <select id="model-select" name="model" class="form-select me-2" style="max-width:200px;">
     {% for m in favorite_models %}
       <option value="{{ m.model_id }}"
@@ -133,11 +131,11 @@
         {{ m.name }}
       </option>
     {% empty %}
-      <option disabled>Favori model yok. Ayarlardan ekleyin.</option>
+      <option disabled>No preferred model. Set one in account settings.</option>
     {% endfor %}
   </select>
   <button type="submit" class="btn btn-sm btn-outline-primary">
-    <i class="bi bi-check-lg"></i> Güncelle
+    <i class="bi bi-check-lg"></i> Update
   </button>
 </form>{% endblock %}
     </main>

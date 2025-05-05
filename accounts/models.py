@@ -8,7 +8,7 @@ class User(AbstractUser):
         'AIModel',
         blank=True,
         related_name='favorited_by',
-        help_text="Kullanıcının favori modelleri"
+        help_text="User's favorite AI models"
     )
 
 class AIModel(models.Model):

@@ -1,10 +1,10 @@
 {% extends "base.html" %}
-{% block title %}Favori Modeller{% endblock %}
+{% block title %}Favorite Models{% endblock %}
 
 {% block content %}
 <div class="container py-5">
-  <h2>Favori Modeller</h2>
-  <p>Listelemelik tüm modeller aşağıda. Beğendiklerinizi seçip “Kaydet” deyin.</p>
+  <h2>Favorite Models</h2>
+  <p>All available models are listed below. Select your favorites and click "Save".</p>
 
   <form method="post">
     {% csrf_token %}
@@ -27,12 +27,12 @@
     </div>
 
     <button type="submit" class="btn btn-primary mt-4">
-      <i class="bi bi-check2-circle"></i> Kaydet
+      <i class="bi bi-check2-circle"></i> Save
     </button>
   </form>
 
   <a href="{% url 'chat:session_list' %}" class="btn btn-link mt-3">
-    <i class="bi bi-chat-dots"></i> Sohbet Ekranına Dön
+    <i class="bi bi-chat-dots"></i> Back to Chat
   </a>
 </div>
 {% endblock %}

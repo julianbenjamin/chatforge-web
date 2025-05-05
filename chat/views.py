@@ -18,9 +18,9 @@ def rename_session(request, pk):
     if new_title:
         session.title = new_title
         session.save()
-        messages.success(request, f"Sohbet başlığı “{new_title}” olarak güncellendi.")
+        messages.success(request, f"Chat title updated to “{new_title}”.")
     else:
-        messages.error(request, "Geçersiz başlık.")
+        messages.error(request, "Title is not valid.")
     return redirect("chat:session_detail", pk=pk)
 
 @login_required
@@ -28,13 +28,12 @@ def rename_session(request, pk):
 def delete_session(request, pk):
     session = get_object_or_404(ChatSession, pk=pk, user=request.user)
     session.delete()
-    messages.success(request, "Sohbet silindi.")
+    messages.success(request, "Chat deleted.")
     return redirect("chat:session_list")
 @login_required
 def session_list(request):
-    # boş bir “session” tanımlayıp direkt yeni oturum oluşturma linki gösterebilir
     return render(request, 'chat/chat_base.html', {
-        'session': None,  # sidebar için
+        'session': None,
     })
 @login_required
 def session_detail(request, pk):
@@ -46,10 +45,9 @@ def session_detail(request, pk):
     })
 @login_required
 def new_session(request):
-    # Yeni bir oturum oluştur, başlık olarak tarih/kullanıcı seçebilirsin
     session = ChatSession.objects.create(
         user=request.user,
-        title="Yeni Sohbet"
+        title = "New Chat"
     )
     return redirect('chat:session_detail', pk=session.pk)
 @login_required
@@ -60,12 +58,10 @@ def send_message(request, session_id):
         payload = json.loads(request.body)
         user_text = payload.get("message","").strip()
         if not user_text:
-            return JsonResponse({"error":"Mesaj boş olamaz"}, status=400)
+            return JsonResponse({"error": "Message cannot be empty"}, status=400)
 
-        # Kullanıcı mesajı
         user_msg = Message.objects.create(session=session, is_user=True, content=user_text)
 
-        # AI cevabı
         client = OpenRouterClient(request.user.openrouter_api_key)
         ai_text = client.send_message(request.user.default_model, user_text)
 
@@ -77,15 +73,12 @@ def send_message(request, session_id):
         })
 
     except ValueError as ve:
-        # choices eksik vs. kontrollü hata
         return JsonResponse({"error": str(ve)}, status=502)
 
     except requests.HTTPError as he:
-        # HTTP 4xx/5xx hataları
         return JsonResponse({"error": f"API error: {he}"}, status= he.response.status_code)
 
     except Exception as e:
-        # Diğer beklenmedik hatalar
         return JsonResponse({"error": f"Sunucu hatası: {e}"}, status=500)
     
 @login_required
